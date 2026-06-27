@@ -2,6 +2,7 @@ import {
   hasLimitedSpins,
   isRushFall,
   isRushState,
+  isNormalState,
   consumesBalls,
   STATE_TYPE_LABELS,
 } from '../constants/nodeDefaults';
@@ -14,6 +15,8 @@ import {
   MAX_SPINS,
   MAX_TREND_POINTS,
   TREND_COMPACT_THRESHOLD,
+  MAX_NORMAL_JACKPOT_BARS,
+  MAX_CHART_BARS_DISPLAY,
 } from './constants';
 import {
   getTargetNode,
@@ -45,6 +48,9 @@ function createStats() {
     minNetYen: 0,
     errors: [],
     stoppedReason: null,
+    normalSpinsPending: 0,
+    normalJackpotBars: [],
+    totalNormalJackpotBars: 0,
   };
 }
 
@@ -150,6 +156,10 @@ export function createSnapshot(stats, currentStatus = null, options = {}) {
     stoppedReason: stats.stoppedReason,
     jackpotBreakdown: breakdown,
     currentStatus: currentStatus ?? { phase: 'idle', label: '待機中' },
+    normalJackpotBars: stats.normalJackpotBars
+      .slice(-MAX_CHART_BARS_DISPLAY)
+      .map((bar) => ({ ...bar })),
+    totalNormalJackpotBars: stats.totalNormalJackpotBars,
   };
 }
 
@@ -169,6 +179,8 @@ export class SimulationRunner {
     this.currentNode = null;
     this.visitNodeId = null;
     this.spinsDoneInVisit = 0;
+    this.lastArrivedStateId = null;
+    this.jackpotEpisode = null;
     this.stopped = false;
     this.initialize();
   }
@@ -193,6 +205,56 @@ export class SimulationRunner {
   clearVisit() {
     this.visitNodeId = null;
     this.spinsDoneInVisit = 0;
+    this.lastArrivedStateId = null;
+  }
+
+  onArriveAtState(stateNode) {
+    const { stateType } = stateNode.data;
+    if (isNormalState(stateType)) {
+      this.finalizeJackpotEpisode();
+    }
+    if (this.jackpotEpisode && isRushState(stateType)) {
+      this.jackpotEpisode.enteredRush = true;
+    }
+  }
+
+  finalizeJackpotEpisode() {
+    if (!this.jackpotEpisode) return;
+    const { normalSpins, spinAtJackpot, chain, enteredRush, ballsWonAtStart } =
+      this.jackpotEpisode;
+    const ballsWon = Math.max(0, Math.round(this.stats.ballsWon - ballsWonAtStart));
+    this.stats.normalJackpotBars.push({
+      index: this.stats.totalNormalJackpotBars + 1,
+      normalSpins,
+      spinAtJackpot,
+      ballsWon,
+      rushChain: enteredRush ? chain : null,
+    });
+    this.stats.totalNormalJackpotBars += 1;
+    if (this.stats.normalJackpotBars.length > MAX_NORMAL_JACKPOT_BARS) {
+      const overflow = this.stats.normalJackpotBars.length - MAX_NORMAL_JACKPOT_BARS;
+      this.stats.normalJackpotBars.splice(0, overflow);
+    }
+    this.jackpotEpisode = null;
+  }
+
+  handleJackpotFromState(stateType) {
+    if (isNormalState(stateType)) {
+      this.jackpotEpisode = {
+        normalSpins: this.stats.normalSpinsPending,
+        spinAtJackpot: this.stats.spinCount,
+        ballsWonAtStart: this.stats.ballsWon,
+        chain: 1,
+        enteredRush: false,
+      };
+      this.stats.normalSpinsPending = 0;
+    } else if (this.jackpotEpisode) {
+      this.jackpotEpisode.chain += 1;
+      if (isRushState(stateType)) {
+        this.jackpotEpisode.enteredRush = true;
+      }
+    }
+    recordJackpot(this.stats, stateType);
   }
 
   beginVisit(stateNode) {
@@ -273,7 +335,13 @@ export class SimulationRunner {
 
   advanceThroughInstantNodes() {
     while (this.currentNode && !this.stopped) {
-      if (this.currentNode.type === 'state') return;
+      if (this.currentNode.type === 'state') {
+        if (this.lastArrivedStateId !== this.currentNode.id) {
+          this.lastArrivedStateId = this.currentNode.id;
+          this.onArriveAtState(this.currentNode);
+        }
+        return;
+      }
 
       switch (this.currentNode.type) {
         case 'jackpot':
@@ -346,8 +414,12 @@ export class SimulationRunner {
     recordStateSpin(this.stats, data.stateType);
     this.spinsDoneInVisit += 1;
 
+    if (isNormalState(data.stateType)) {
+      this.stats.normalSpinsPending += 1;
+    }
+
     if (rollProbability(data.jackpotProbability)) {
-      recordJackpot(this.stats, data.stateType);
+      this.handleJackpotFromState(data.stateType);
       const jackpotNode = getTargetNode(this.nodes, this.edges, stateNode.id, 'jackpot');
       if (!jackpotNode) {
         this.stats.errors.push(`「${data.label}」の大当たり遷移先が未接続です`);

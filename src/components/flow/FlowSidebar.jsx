@@ -2,6 +2,7 @@ import {
   Box,
   Button,
   Divider,
+  IconButton,
   List,
   ListItem,
   ListItemButton,
@@ -10,6 +11,7 @@ import {
   Paper,
   Typography,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CircleIcon from '@mui/icons-material/Circle';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
@@ -28,7 +30,7 @@ const SIDEBAR_ITEMS = [
   { type: 'event', label: 'イベント', icon: <BoltIcon color="secondary" /> },
 ];
 
-function FlowSidebar() {
+function FlowSidebar({ embedded = false, onClose }) {
   const dispatch = useDispatch();
 
   const handleAddNode = (type) => {
@@ -59,17 +61,26 @@ function FlowSidebar() {
   return (
     <Paper
       sx={{
-        width: 260,
+        width: embedded ? '100%' : 260,
         flexShrink: 0,
         display: 'flex',
         flexDirection: 'column',
-        borderRight: 1,
+        borderRight: embedded ? 0 : 1,
         borderColor: 'divider',
-        borderRadius: 0,
+        borderRadius: embedded ? 0 : undefined,
         bgcolor: 'background.paper',
         overflow: 'hidden',
+        maxHeight: embedded ? '88dvh' : undefined,
       }}
+      elevation={embedded ? 0 : 1}
     >
+      {embedded && onClose && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 1, pt: 1 }}>
+          <IconButton size="small" onClick={onClose} aria-label="閉じる">
+            <CloseIcon />
+          </IconButton>
+        </Box>
+      )}
       <FlowLibraryPanel />
       <Divider />
       <Box sx={{ p: 2, pb: 1 }}>

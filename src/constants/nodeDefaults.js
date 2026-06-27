@@ -77,12 +77,19 @@ export function calcCombinedJackpotDenominator(jackpotProbability, chargeProbabi
   if (j <= 0 && c <= 0) return null;
   if (c <= 0) return j > 0 ? j : null;
   if (j <= 0) return c;
-  return Math.round(1 / (1 / j + 1 / c));
+  return 1 / (1 / j + 1 / c);
+}
+
+export function formatProbabilityDenominator(denominator) {
+  const n = Number(denominator);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  if (Number.isInteger(n)) return `1/${n}`;
+  return `1/${parseFloat(n.toPrecision(10))}`;
 }
 
 export function formatCombinedJackpotProb(jackpotProbability, chargeProbability) {
   const denom = calcCombinedJackpotDenominator(jackpotProbability, chargeProbability);
-  return denom ? `1/${denom}` : null;
+  return formatProbabilityDenominator(denom);
 }
 
 export function isRushFall(stateType) {

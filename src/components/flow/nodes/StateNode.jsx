@@ -7,6 +7,7 @@ import {
   hasLimitedSpins,
   hasChargeProbability,
   formatCombinedJackpotProb,
+  formatProbabilityDenominator,
   isNormalState,
 } from '../../../constants/nodeDefaults';
 
@@ -99,7 +100,7 @@ function StateNode({ data }) {
         <Chip label={stateLabel} size="small" color="primary" variant="outlined" />
         {data.jackpotProbability > 0 && (
           <Chip
-            label={`大当たり 1/${data.jackpotProbability}`}
+            label={`大当たり ${formatProbabilityDenominator(data.jackpotProbability) ?? ''}`}
             size="small"
             color="warning"
             variant="outlined"
@@ -107,7 +108,7 @@ function StateNode({ data }) {
         )}
         {hasCharge && (
           <Chip
-            label={`チャージ 1/${data.chargeProbability}`}
+            label={`チャージ ${formatProbabilityDenominator(data.chargeProbability) ?? ''}`}
             size="small"
             color="secondary"
             variant="outlined"
@@ -123,7 +124,7 @@ function StateNode({ data }) {
         )}
         {rushFall && data.fallProbability > 0 && (
           <Chip
-            label={`転落 1/${data.fallProbability}`}
+            label={`転落 ${formatProbabilityDenominator(data.fallProbability) ?? ''}`}
             size="small"
             color="error"
             variant="outlined"

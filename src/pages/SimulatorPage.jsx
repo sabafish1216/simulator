@@ -5,7 +5,6 @@ import {
   Paper,
   Typography,
   Stack,
-  TextField,
   Button,
   Alert,
   Grid,
@@ -22,12 +21,14 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import ScienceIcon from '@mui/icons-material/Science';
 import { SimulationRunner, createSnapshot } from '../simulation/runner';
 import CurrentStateIndicator from '../components/simulator/CurrentStateIndicator';
+import NormalJackpotBarChart from '../components/simulator/NormalJackpotBarChart';
 import SimulatorTrendChart from '../components/simulator/SimulatorTrendChart';
 import SimulatorStatsPanel from '../components/simulator/SimulatorStatsPanel';
 import {
   DEFAULT_ROTATIONS_PER_1000YEN,
   DEFAULT_ROTATIONS_PER_SECOND,
   MAX_STEPS_PER_FRAME,
+  SNAPSHOT_INTERVAL_MS,
   STOPPED_REASON_LABELS,
   calcBallsPerRotation,
 } from '../simulation/constants';
@@ -37,6 +38,8 @@ import {
   selectSimulatorFlowId,
   setSimulatorFlowId,
 } from '../store/flowsSlice';
+import NumericTextField from '../components/common/NumericTextField';
+import useIsMobile from '../hooks/useIsMobile';
 
 const EMPTY_SNAPSHOT = createSnapshot({
   ballsUsed: 0,
@@ -55,10 +58,13 @@ const EMPTY_SNAPSHOT = createSnapshot({
   trend: [],
   errors: [],
   stoppedReason: null,
+  normalJackpotBars: [],
+  totalNormalJackpotBars: 0,
 });
 
 function SimulatorPage() {
   const theme = useTheme();
+  const isMobile = useIsMobile();
   const dispatch = useDispatch();
   const savedFlows = useSelector(selectSavedFlows);
   const simulatorFlowId = useSelector(selectSimulatorFlowId);
@@ -76,6 +82,7 @@ function SimulatorPage() {
   const rafRef = useRef(null);
   const spinDebtRef = useRef(0);
   const lastTimeRef = useRef(null);
+  const lastSnapshotTimeRef = useRef(0);
 
   const parsedMaxLossYen = useMemo(() => {
     if (maxLossYenInput === '') return null;
@@ -102,6 +109,7 @@ function SimulatorPage() {
     setRunning(false);
     spinDebtRef.current = 0;
     lastTimeRef.current = null;
+    lastSnapshotTimeRef.current = 0;
     initRunner();
   };
 
@@ -112,6 +120,7 @@ function SimulatorPage() {
     if (runnerRef.current?.isStopped()) return;
     spinDebtRef.current = 0;
     lastTimeRef.current = null;
+    lastSnapshotTimeRef.current = 0;
     setRunning(true);
   };
 
@@ -160,8 +169,15 @@ function SimulatorPage() {
 
       if (steps > 0) {
         runner.advance(steps);
-        setSnapshot(runner.getSnapshot());
+        const shouldUpdateSnapshot =
+          runner.isStopped() ||
+          timestamp - lastSnapshotTimeRef.current >= SNAPSHOT_INTERVAL_MS;
+        if (shouldUpdateSnapshot) {
+          setSnapshot(runner.getSnapshot());
+          lastSnapshotTimeRef.current = timestamp;
+        }
         if (runner.isStopped()) {
+          setSnapshot(runner.getSnapshot());
           setRunning(false);
           return;
         }
@@ -187,14 +203,19 @@ function SimulatorPage() {
         overflow: 'auto',
       }}
     >
-      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 3 }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={1.5}
+        sx={{ mb: { xs: 2, sm: 3 } }}
+      >
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: 44,
-            height: 44,
+            width: { xs: 40, sm: 44 },
+            height: { xs: 40, sm: 44 },
             borderRadius: 2,
             bgcolor: alpha(theme.palette.primary.main, 0.12),
             color: 'primary.main',
@@ -203,14 +224,14 @@ function SimulatorPage() {
           <ScienceIcon />
         </Box>
         <Box>
-          <Typography variant="h5">シミュレーション</Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant={isMobile ? 'h6' : 'h5'}>シミュレーション</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
             フローを実行して統計を確認
           </Typography>
         </Box>
       </Stack>
 
-      <Paper sx={{ p: 3, mb: 3, bgcolor: alpha(theme.palette.background.paper, 0.9) }}>
+      <Paper sx={{ p: { xs: 2, sm: 3 }, mb: { xs: 2, sm: 3 }, bgcolor: alpha(theme.palette.background.paper, 0.9) }}>
         <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
           シミュレーション設定
         </Typography>
@@ -237,40 +258,42 @@ function SimulatorPage() {
         )}
         <Grid container spacing={2} alignItems="flex-end">
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <TextField
+            <NumericTextField
               label="1000円（250玉）あたりの回転数"
-              type="number"
               fullWidth
               size="small"
-              inputProps={{ min: 1, step: 0.1 }}
+              allowDecimal
               value={rotationsPer1000Yen}
-              onChange={(e) => setRotationsPer1000Yen(Number(e.target.value) || 1)}
+              onCommit={setRotationsPer1000Yen}
+              min={0.1}
+              defaultOnEmpty={DEFAULT_ROTATIONS_PER_1000YEN}
               disabled={running}
               helperText={`1回転 ≈ ${ballsPerRotation.toFixed(2)} 玉消費`}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <TextField
+            <NumericTextField
               label="1秒あたりの回転数"
-              type="number"
               fullWidth
               size="small"
-              inputProps={{ min: 0.1, step: 1 }}
+              allowDecimal
               value={rotationsPerSecond}
-              onChange={(e) => setRotationsPerSecond(Number(e.target.value) || 0.1)}
+              onCommit={setRotationsPerSecond}
+              min={0.1}
+              defaultOnEmpty={DEFAULT_ROTATIONS_PER_SECOND}
               disabled={running}
               helperText="シミュレーション速度（回転/秒）"
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <TextField
+            <NumericTextField
               label="上限金額（円）"
-              type="number"
               fullWidth
               size="small"
-              inputProps={{ min: 1, step: 1000 }}
-              value={maxLossYenInput}
-              onChange={(e) => setMaxLossYenInput(e.target.value)}
+              allowEmpty
+              value={parsedMaxLossYen}
+              onCommit={(value) => setMaxLossYenInput(value == null ? '' : String(value))}
+              min={1}
               disabled={running}
               placeholder="上限なし"
               helperText={
@@ -280,12 +303,12 @@ function SimulatorPage() {
               }
             />
           </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Stack direction="row" spacing={1}>
+          <Grid size={{ xs: 12 }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
               <Button
                 variant="contained"
                 fullWidth
-                size="large"
+                size={isMobile ? 'medium' : 'large'}
                 startIcon={<PlayArrowIcon />}
                 onClick={handleStart}
                 disabled={running || !simulatorFlow}
@@ -295,7 +318,7 @@ function SimulatorPage() {
               <Button
                 variant="outlined"
                 fullWidth
-                size="large"
+                size={isMobile ? 'medium' : 'large'}
                 startIcon={<StopIcon />}
                 onClick={handleStop}
                 disabled={!running}
@@ -304,13 +327,15 @@ function SimulatorPage() {
               </Button>
               <Button
                 variant="outlined"
-                size="large"
+                fullWidth={isMobile}
+                size={isMobile ? 'medium' : 'large'}
                 onClick={handleReset}
                 disabled={running}
-                sx={{ minWidth: 56, px: 1 }}
+                sx={{ minWidth: { sm: 56 }, px: 1 }}
                 aria-label="リセット"
               >
-                <RestartAltIcon />
+                <RestartAltIcon sx={{ mr: { xs: 1, sm: 0 } }} />
+                {isMobile ? 'リセット' : null}
               </Button>
             </Stack>
           </Grid>
@@ -337,8 +362,8 @@ function SimulatorPage() {
         </Alert>
       )}
 
-      <Stack spacing={3}>
-        <Paper sx={{ p: 3, bgcolor: alpha(theme.palette.background.paper, 0.9) }}>
+      <Stack spacing={{ xs: 2, sm: 3 }}>
+        <Paper sx={{ p: { xs: 2, sm: 3 }, bgcolor: alpha(theme.palette.background.paper, 0.9) }}>
           <SimulatorTrendChart
             trend={snapshot.trend}
             spinCount={snapshot.spinCount}
@@ -347,6 +372,19 @@ function SimulatorPage() {
         </Paper>
 
         <CurrentStateIndicator status={snapshot.currentStatus} running={running} />
+
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 2,
+            bgcolor: alpha(theme.palette.background.paper, 0.9),
+          }}
+        >
+          <NormalJackpotBarChart
+            bars={snapshot.normalJackpotBars ?? []}
+            totalNormalJackpots={snapshot.totalNormalJackpotBars ?? snapshot.normalJackpots}
+          />
+        </Paper>
 
         <SimulatorStatsPanel snapshot={snapshot} />
       </Stack>

@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
 import {
   updateNodeData,
   setJackpotDistributions,
@@ -30,6 +31,7 @@ import {
   formatCombinedJackpotProb,
 } from '../../constants/nodeDefaults';
 import PayoutPieChart from './PayoutPieChart';
+import NumericTextField from '../common/NumericTextField';
 
 function StatePropertyForm({ node, nodes, edges }) {
   const dispatch = useDispatch();
@@ -131,69 +133,67 @@ function StatePropertyForm({ node, nodes, edges }) {
 
       {rushFall ? (
         <>
-          <TextField
+          <NumericTextField
             label="大当たり確率（分母 N）"
             size="small"
             fullWidth
-            type="number"
-            inputProps={{ min: 1 }}
-            value={data.jackpotProbability ?? ''}
-            onChange={(e) =>
-              handleChange('jackpotProbability', Number(e.target.value) || 0)
-            }
-            helperText="1/N の N を入力"
+            allowDecimal
+            value={data.jackpotProbability ?? 1}
+            onCommit={(value) => handleChange('jackpotProbability', value)}
+            min={1}
+            defaultOnEmpty={1}
+            helperText="1/N の N を入力（小数可）"
           />
-          <TextField
+          <NumericTextField
             label="転落確率（分母 N）"
             size="small"
             fullWidth
-            type="number"
-            inputProps={{ min: 1 }}
-            value={data.fallProbability ?? ''}
-            onChange={(e) => handleChange('fallProbability', Number(e.target.value) || 0)}
-            helperText="1/N の N を入力"
+            allowDecimal
+            value={data.fallProbability ?? 1}
+            onCommit={(value) => handleChange('fallProbability', value)}
+            min={1}
+            defaultOnEmpty={1}
+            helperText="1/N の N を入力（小数可）"
           />
         </>
       ) : (
         <>
-          <TextField
+          <NumericTextField
             label="大当たり確率（分母 N）"
             size="small"
             fullWidth
-            type="number"
-            inputProps={{ min: 1 }}
-            value={data.jackpotProbability ?? ''}
-            onChange={(e) =>
-              handleChange('jackpotProbability', Number(e.target.value) || 0)
-            }
-            helperText="1/N の N を入力（例: 319 → 1/319）"
+            allowDecimal
+            value={data.jackpotProbability ?? 1}
+            onCommit={(value) => handleChange('jackpotProbability', value)}
+            min={1}
+            defaultOnEmpty={1}
+            helperText="1/N の N を入力（例: 319.7 → 1/319.7）"
           />
           {isNormal && (
-            <TextField
+            <NumericTextField
               label="チャージ確率（分母 N）"
               size="small"
               fullWidth
-              type="number"
-              inputProps={{ min: 0 }}
+              allowDecimal
               value={data.chargeProbability ?? 0}
-              onChange={(e) =>
-                handleChange('chargeProbability', Number(e.target.value) || 0)
-              }
+              onCommit={(value) => handleChange('chargeProbability', value)}
+              min={0}
+              defaultOnEmpty={0}
               helperText={
                 combinedProb
                   ? `0 = チャージなし / 合算大当たり確率: ${combinedProb}`
-                  : '0 = チャージなし'
+                  : '0 = チャージなし（小数可）'
               }
             />
           )}
-          <TextField
+          <NumericTextField
             label="回転数"
             size="small"
             fullWidth
-            type="number"
-            inputProps={{ min: 0 }}
             value={data.spins ?? 0}
-            onChange={(e) => handleChange('spins', Number(e.target.value) || 0)}
+            onCommit={(value) => handleChange('spins', value)}
+            min={0}
+            defaultOnEmpty={0}
             helperText="0 の場合は無制限"
           />
         </>
@@ -315,26 +315,22 @@ function JackpotPropertyForm({ node }) {
               onChange={(e) => handleDistributionChange(index, 'label', e.target.value)}
             />
             <Stack direction="row" spacing={1}>
-              <TextField
+              <NumericTextField
                 label="出玉"
                 size="small"
-                type="number"
-                inputProps={{ min: 0 }}
                 value={dist.balls}
-                onChange={(e) =>
-                  handleDistributionChange(index, 'balls', Number(e.target.value) || 0)
-                }
+                onCommit={(value) => handleDistributionChange(index, 'balls', value)}
+                min={0}
+                defaultOnEmpty={0}
                 sx={{ flex: 1 }}
               />
-              <TextField
+              <NumericTextField
                 label="比重"
                 size="small"
-                type="number"
-                inputProps={{ min: 1 }}
                 value={dist.weight}
-                onChange={(e) =>
-                  handleDistributionChange(index, 'weight', Number(e.target.value) || 1)
-                }
+                onCommit={(value) => handleDistributionChange(index, 'weight', value)}
+                min={1}
+                defaultOnEmpty={1}
                 sx={{ flex: 1 }}
               />
             </Stack>
@@ -359,20 +355,40 @@ const PANEL_CONTENT = {
   jackpot: JackpotPropertyForm,
 };
 
-function NodePropertyPanel({ selectedNode, nodes, edges }) {
+function NodePropertyPanel({ selectedNode, nodes, edges, embedded = false, onClose }) {
+  const shellSx = embedded
+    ? {
+        width: '100%',
+        border: 0,
+        borderRadius: 0,
+        bgcolor: 'background.paper',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        maxHeight: '88dvh',
+      }
+    : {
+        width: 300,
+        flexShrink: 0,
+        borderLeft: 1,
+        borderColor: 'divider',
+        borderRadius: 0,
+        bgcolor: 'background.paper',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      };
+
   if (!selectedNode) {
     return (
-      <Paper
-        sx={{
-          width: 300,
-          flexShrink: 0,
-          borderLeft: 1,
-          borderColor: 'divider',
-          borderRadius: 0,
-          bgcolor: 'background.paper',
-          p: 2,
-        }}
-      >
+      <Paper sx={{ ...shellSx, p: 2 }}>
+        {embedded && onClose && (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+            <IconButton size="small" onClick={onClose} aria-label="閉じる">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        )}
         <Typography variant="subtitle2" color="text.secondary">
           ノードを選択すると
           <br />
@@ -385,26 +401,21 @@ function NodePropertyPanel({ selectedNode, nodes, edges }) {
   const FormComponent = PANEL_CONTENT[selectedNode.type];
 
   return (
-    <Paper
-      sx={{
-        width: 300,
-        flexShrink: 0,
-        borderLeft: 1,
-        borderColor: 'divider',
-        borderRadius: 0,
-        bgcolor: 'background.paper',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}
-    >
-      <Box sx={{ p: 2, pb: 1 }}>
-        <Typography variant="subtitle1" fontWeight="bold">
-          プロパティ
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {selectedNode.type} / {selectedNode.id}
-        </Typography>
+    <Paper sx={shellSx}>
+      <Box sx={{ p: 2, pb: 1, display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+          <Typography variant="subtitle1" fontWeight="bold">
+            プロパティ
+          </Typography>
+          <Typography variant="caption" color="text.secondary" noWrap display="block">
+            {selectedNode.type} / {selectedNode.id}
+          </Typography>
+        </Box>
+        {embedded && onClose && (
+          <IconButton size="small" onClick={onClose} aria-label="閉じる" sx={{ mt: -0.5 }}>
+            <CloseIcon />
+          </IconButton>
+        )}
       </Box>
       <Divider />
       <Box sx={{ p: 2, overflow: 'auto', flexGrow: 1 }}>

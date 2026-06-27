@@ -1,4 +1,16 @@
 /* React Flow — dark canvas */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .react-flow {
   --xy-edge-stroke-default: rgba(238, 241, 248, 0.28);
   --xy-edge-stroke-width-default: 1.5;
@@ -42,4 +54,22 @@
 
 .react-flow__handle-right.jackpot-dist-handle {
   transform: translate(50%, -50%);
+}
+
+@media (max-width: 900px) {
+  .react-flow__handle {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    min-height: 18px;
+  }
+
+  .react-flow__controls {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  }
+
+  .react-flow__controls-button {
+    width: 32px;
+    height: 32px;
+  }
 }

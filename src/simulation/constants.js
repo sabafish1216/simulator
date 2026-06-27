@@ -8,6 +8,12 @@ export const MAX_TREND_POINTS = 1000;
 /** メモリ節約のため、この件数を超えたら均等間引きで圧縮する */
 export const TREND_COMPACT_THRESHOLD = MAX_TREND_POINTS * 5;
 export const MAX_STEPS_PER_FRAME = 5000;
+/** 棒グラフ用データの最大保持件数（メモリ保護） */
+export const MAX_NORMAL_JACKPOT_BARS = 500;
+/** UI に渡す棒グラフの最大件数 */
+export const MAX_CHART_BARS_DISPLAY = 120;
+/** UI 更新間隔（ms）— 毎フレームの setState を避ける */
+export const SNAPSHOT_INTERVAL_MS = 150;
 
 export function ballsToYen(balls) {
   return (balls / BALLS_PER_500YEN) * YEN_PER_INVESTMENT_UNIT;

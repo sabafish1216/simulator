@@ -11,6 +11,11 @@ const initialNodes = [
   },
 ];
 
+const DEFAULT_EDGE_STYLE = {
+  type: 'smoothstep',
+  pathOptions: { borderRadius: 16 },
+};
+
 const initialState = {
   nodes: initialNodes,
   edges: [],
@@ -39,7 +44,10 @@ const flowSlice = createSlice({
           connection.sourceHandle = 'jackpot';
         }
       }
-      state.edges = addEdge(connection, state.edges);
+      state.edges = addEdge(
+        { ...DEFAULT_EDGE_STYLE, ...connection },
+        state.edges,
+      );
     },
     setViewport: (state, action) => {
       state.viewport = action.payload;
@@ -96,6 +104,7 @@ const flowSlice = createSlice({
       });
       if (targetNodeId) {
         state.edges.push({
+          ...DEFAULT_EDGE_STYLE,
           id: `e-${sourceNodeId}-${sourceHandle}-${targetNodeId}`,
           source: sourceNodeId,
           sourceHandle,

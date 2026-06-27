@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { formatYen } from '../../simulation/constants';
+import useIsMobile from '../../hooks/useIsMobile';
 
 function TrendTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -46,8 +47,10 @@ function TrendTooltip({ active, payload, label }) {
 
 function SimulatorTrendChart({ trend, spinCount, maxLossYen }) {
   const theme = useTheme();
+  const isMobile = useIsMobile();
   const chartGrid = alpha(theme.palette.text.primary, 0.08);
   const chartAxis = alpha(theme.palette.text.secondary, 0.9);
+  const chartHeight = isMobile ? 240 : 360;
 
   return (
     <Box>
@@ -59,7 +62,7 @@ function SimulatorTrendChart({ trend, spinCount, maxLossYen }) {
         gap={1}
         sx={{ mb: 2 }}
       >
-        <Typography variant="subtitle1" fontWeight="bold">
+        <Typography variant={isMobile ? 'subtitle2' : 'subtitle1'} fontWeight="bold">
           出玉・収支トレンド
         </Typography>
         <Typography variant="caption" color="text.secondary">
@@ -70,7 +73,7 @@ function SimulatorTrendChart({ trend, spinCount, maxLossYen }) {
       <Box
         sx={{
           width: '100%',
-          height: 360,
+          height: chartHeight,
           borderRadius: 2,
           bgcolor: alpha('#000', 0.2),
           border: `1px solid ${alpha(theme.palette.text.primary, 0.06)}`,
@@ -78,7 +81,7 @@ function SimulatorTrendChart({ trend, spinCount, maxLossYen }) {
         }}
       >
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={trend} margin={{ top: 8, right: 12, left: 4, bottom: 8 }}>
+            <ComposedChart data={trend} margin={{ top: 8, right: 4, left: 0, bottom: 4 }}>
             <CartesianGrid stroke={chartGrid} strokeDasharray="3 3" />
             <XAxis
               dataKey="index"
