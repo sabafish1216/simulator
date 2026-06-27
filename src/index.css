@@ -1,0 +1,45 @@
+/* React Flow — dark canvas */
+.react-flow {
+  --xy-edge-stroke-default: rgba(238, 241, 248, 0.28);
+  --xy-edge-stroke-width-default: 1.5;
+  --xy-edge-stroke-selected-default: #7c9cff;
+  --xy-connectionline-stroke-default: #7c9cff;
+  --xy-node-border-default: rgba(238, 241, 248, 0.12);
+  --xy-node-boxshadow-default: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --xy-node-color-default: #eef1f8;
+  --xy-handle-background-color-default: #7c9cff;
+  --xy-handle-border-color-default: #141824;
+  --xy-minimap-background-color-default: #141824;
+  --xy-background-pattern-color-default: rgba(238, 241, 248, 0.04);
+  --xy-controls-button-background-color-default: #1c2130;
+  --xy-controls-button-background-color-hover-default: #252b3d;
+  --xy-controls-button-color-default: #eef1f8;
+  --xy-controls-button-color-hover-default: #eef1f8;
+  --xy-controls-button-border-color-default: rgba(238, 241, 248, 0.1);
+}
+
+.react-flow__minimap-mask {
+  fill: rgba(10, 12, 18, 0.65);
+}
+
+/* 接続ハンドル — デフォルト 6px より大きく、掴みやすくする */
+.react-flow__handle {
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  min-height: 14px;
+  border-width: 2px;
+}
+
+.react-flow__handle.connectionindicator,
+.react-flow__handle.connectingfrom {
+  cursor: crosshair;
+}
+
+.react-flow__handle.connectionindicator:hover {
+  box-shadow: 0 0 0 4px rgba(124, 156, 255, 0.3);
+}
+
+.react-flow__handle-right.jackpot-dist-handle {
+  transform: translate(50%, -50%);
+}
