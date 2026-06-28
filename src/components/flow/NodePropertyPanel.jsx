@@ -117,9 +117,9 @@ function StatePropertyForm({ node, nodes, edges }) {
         onChange={(e) => handleChange('label', e.target.value)}
       />
       <FormControl size="small" fullWidth>
-        <InputLabel>状態タイプ</InputLabel>
+        <InputLabel>モードタイプ</InputLabel>
         <Select
-          label="状態タイプ"
+          label="モードタイプ"
           value={data.stateType}
           onChange={(e) => handleChange('stateType', e.target.value)}
         >

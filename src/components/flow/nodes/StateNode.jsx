@@ -8,8 +8,10 @@ import {
   hasChargeProbability,
   formatCombinedJackpotProb,
   formatProbabilityDenominator,
+  formatLimitedSpinWinProbability,
   isNormalState,
 } from '../../../constants/nodeDefaults';
+import NodeShell from '../NodeShell';
 
 function DualHandleFooter({ leftLabel, rightLabel, leftId, rightId, leftColor, rightColor }) {
   return (
@@ -68,7 +70,7 @@ function TripleHandleFooter({
   );
 }
 
-function StateNode({ data }) {
+function StateNode({ id, data }) {
   const stateLabel =
     STATE_TYPE_OPTIONS.find((o) => o.value === data.stateType)?.label ?? data.stateType;
   const limitedSpins = hasLimitedSpins(data);
@@ -77,10 +79,12 @@ function StateNode({ data }) {
   const combinedProb = isNormalState(data.stateType)
     ? formatCombinedJackpotProb(data.jackpotProbability, data.chargeProbability)
     : null;
+  const expectedWinProb = limitedSpins ? formatLimitedSpinWinProbability(data) : null;
   const showHandles = limitedSpins || rushFall || hasCharge;
 
   return (
-    <Paper
+    <NodeShell nodeId={id} nodeType="state">
+      <Paper
       sx={{
         px: 2,
         py: 1.5,
@@ -93,7 +97,7 @@ function StateNode({ data }) {
       }}
     >
       <Handle type="target" position={Position.Top} />
-      <Typography variant="body2" fontWeight="bold" gutterBottom>
+      <Typography variant="body2" fontWeight="bold" gutterBottom sx={{ pr: 3.5 }}>
         {data.label}
       </Typography>
       <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: showHandles ? 0.5 : 0 }}>
@@ -132,6 +136,14 @@ function StateNode({ data }) {
         )}
         {!rushFall && data.spins > 0 && (
           <Chip label={`${data.spins}回転`} size="small" variant="outlined" />
+        )}
+        {expectedWinProb != null && (
+          <Chip
+            label={`期待度 ${expectedWinProb}`}
+            size="small"
+            color="info"
+            variant="filled"
+          />
         )}
       </Box>
 
@@ -181,7 +193,8 @@ function StateNode({ data }) {
       {!limitedSpins && !rushFall && !hasCharge && (
         <Handle type="source" position={Position.Bottom} id="jackpot" />
       )}
-    </Paper>
+      </Paper>
+    </NodeShell>
   );
 }
 

@@ -165,14 +165,17 @@ export function createSnapshot(stats, currentStatus = null, options = {}) {
 
 const NODE_TYPE_LABELS = {
   start: '開始',
+  state: 'モード',
   jackpot: '大当たり',
-  event: 'イベント',
 };
 
 export class SimulationRunner {
   constructor({ nodes, edges, rotationsPer1000Yen = 18, maxLossYen = null }) {
-    this.nodes = nodes;
-    this.edges = edges;
+    this.nodes = nodes.filter((node) => node.type !== 'event');
+    this.edges = edges.filter((edge) => {
+      const nodeIds = new Set(this.nodes.map((node) => node.id));
+      return nodeIds.has(edge.source) && nodeIds.has(edge.target);
+    });
     this.ballsPerRotation = calcBallsPerRotation(rotationsPer1000Yen);
     this.maxLossYen = maxLossYen != null && maxLossYen > 0 ? maxLossYen : null;
     this.stats = createStats();
@@ -347,7 +350,6 @@ export class SimulationRunner {
         case 'jackpot':
           if (!this.processJackpotNode(this.currentNode)) return;
           break;
-        case 'event':
         case 'start': {
           const next = getTargetNode(this.nodes, this.edges, this.currentNode.id, null);
           if (!next) {

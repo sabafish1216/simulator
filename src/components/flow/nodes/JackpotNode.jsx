@@ -2,15 +2,17 @@ import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { Paper, Typography, Box, Stack, useTheme } from '@mui/material';
 import PayoutPieChart from '../PayoutPieChart';
+import NodeShell from '../NodeShell';
 import { computePieSlices } from '../../../utils/pieChart';
 
-function JackpotNode({ data }) {
+function JackpotNode({ id, data }) {
   const theme = useTheme();
   const distributions = data.distributions || [];
   const slices = computePieSlices(distributions);
 
   return (
-    <Paper
+    <NodeShell nodeId={id} nodeType="jackpot">
+      <Paper
       sx={{
         minWidth: 220,
         bgcolor: 'background.paper',
@@ -24,7 +26,7 @@ function JackpotNode({ data }) {
       <Handle type="target" position={Position.Top} />
 
       <Box sx={{ px: 1.5, pt: 1.5, pb: 1 }}>
-        <Typography variant="body2" fontWeight="bold" gutterBottom>
+        <Typography variant="body2" fontWeight="bold" gutterBottom sx={{ pr: 3.5 }}>
           {data.label}
         </Typography>
 
@@ -35,15 +37,22 @@ function JackpotNode({ data }) {
             sx={{
               flexGrow: 1,
               minWidth: 0,
-              display: 'grid',
-              gridTemplateColumns: '8px max-content auto auto',
-              columnGap: 1,
-              rowGap: 0.4,
-              alignItems: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 0.5,
             }}
           >
             {slices.map((slice) => (
-              <Box key={slice.id} sx={{ display: 'contents' }}>
+              <Box
+                key={slice.id}
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: '8px minmax(0, 1fr) 52px 36px 14px',
+                  columnGap: 1,
+                  alignItems: 'center',
+                  minHeight: 18,
+                }}
+              >
                 <Box
                   sx={{
                     width: 8,
@@ -64,22 +73,23 @@ function JackpotNode({ data }) {
                 >
                   {slice.balls}玉
                 </Typography>
-                <Box sx={{ position: 'relative', pr: 2, justifySelf: 'end' }}>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ minWidth: 32, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}
-                  >
-                    {slice.percent}%
-                  </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}
+                >
+                  {slice.percent}%
+                </Typography>
+                <Box sx={{ position: 'relative', width: 14, height: 14, justifySelf: 'center' }}>
                   <Handle
                     type="source"
                     position={Position.Right}
                     id={slice.id}
                     className="jackpot-dist-handle"
                     style={{
-                      right: -10,
+                      right: 0,
                       top: '50%',
+                      transform: 'translate(50%, -50%)',
                       background: slice.color,
                       border: `2px solid ${theme.palette.background.paper}`,
                     }}
@@ -95,7 +105,8 @@ function JackpotNode({ data }) {
           </Box>
         </Stack>
       </Box>
-    </Paper>
+      </Paper>
+    </NodeShell>
   );
 }
 

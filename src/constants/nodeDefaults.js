@@ -24,7 +24,7 @@ export const NODE_TEMPLATES = {
   state: {
     type: 'state',
     data: {
-      label: '状態',
+      label: 'モード',
       stateType: 'normal',
       spins: 0,
       jackpotProbability: 319,
@@ -44,14 +44,6 @@ export const NODE_TEMPLATES = {
       })),
     },
   }),
-  event: {
-    type: 'event',
-    data: {
-      label: 'イベント',
-      eventType: 'reach',
-      probability: 1,
-    },
-  },
 };
 
 export const STATE_TYPE_OPTIONS = [
@@ -109,12 +101,39 @@ export function hasLimitedSpins(data) {
   return !isRushFall(data.stateType) && (data.spins ?? 0) > 0;
 }
 
+/** 回転数制限内で大当たりまたはチャージに当たる確率（期待度） */
+export function calcLimitedSpinWinProbability(data) {
+  if (!hasLimitedSpins(data)) return null;
+
+  const spins = Number(data.spins);
+  if (!Number.isFinite(spins) || spins <= 0) return null;
+
+  const jackpotDenominator = Number(data.jackpotProbability);
+  const chargeDenominator = Number(data.chargeProbability);
+  const pJackpot =
+    Number.isFinite(jackpotDenominator) && jackpotDenominator > 0 ? 1 / jackpotDenominator : 0;
+  const pCharge =
+    hasChargeProbability(data) && Number.isFinite(chargeDenominator) && chargeDenominator > 0
+      ? 1 / chargeDenominator
+      : 0;
+
+  if (pJackpot <= 0 && pCharge <= 0) return 0;
+
+  const pMissPerSpin = (1 - pJackpot) * (1 - pCharge);
+  return 1 - pMissPerSpin ** spins;
+}
+
+export function formatLimitedSpinWinProbability(data) {
+  const probability = calcLimitedSpinWinProbability(data);
+  if (probability == null) return null;
+
+  const percent = probability * 100;
+  if (percent >= 10) return `${percent.toFixed(1)}%`;
+  if (percent >= 1) return `${percent.toFixed(2)}%`;
+  if (percent >= 0.01) return `${percent.toFixed(3)}%`;
+  return `${percent.toFixed(4)}%`;
+}
+
 export const STATE_TYPE_LABELS = Object.fromEntries(
   STATE_TYPE_OPTIONS.map((o) => [o.value, o.label]),
 );
-
-export const EVENT_TYPE_OPTIONS = [
-  { value: 'reach', label: 'リーチ' },
-  { value: 'miss', label: 'ハズレ' },
-  { value: 'continuation', label: '継続' },
-];

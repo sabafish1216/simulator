@@ -56,6 +56,10 @@ body {
   transform: translate(50%, -50%);
 }
 
+.flow-node-action-btn {
+  touch-action: manipulation;
+}
+
 @media (max-width: 900px) {
   .react-flow__handle {
     width: 18px;

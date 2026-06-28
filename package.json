@@ -1,7 +1,7 @@
 {
   "name": "simulate-simulator",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.2",
   "author": "sabafish1028",
   "license": "MIT",
   "type": "module",

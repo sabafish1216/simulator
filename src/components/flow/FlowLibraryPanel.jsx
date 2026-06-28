@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Box,
@@ -9,12 +9,15 @@ import {
   ListItem,
   ListItemButton,
   ListItemText,
+  Stack,
   TextField,
   Typography,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import FileUploadIcon from '@mui/icons-material/FileUpload';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { loadFlowData, resetFlow } from '../../store/flowSlice';
 import {
   saveFlow,
@@ -25,9 +28,11 @@ import {
   selectSavedFlows,
   selectActiveFlow,
 } from '../../store/flowsSlice';
+import { buildFlowExportPayload, downloadFlowFile, parseFlowFile } from '../../utils/flowFile';
 
 function FlowLibraryPanel() {
   const dispatch = useDispatch();
+  const fileInputRef = useRef(null);
   const savedFlows = useSelector(selectSavedFlows);
   const activeFlow = useSelector(selectActiveFlow);
   const { nodes, edges, viewport } = useSelector((state) => state.flow);
@@ -68,8 +73,8 @@ function FlowLibraryPanel() {
     dispatch(setSimulatorFlowId(flow.id));
   };
 
-  const handleDelete = (flowId, flowName) => {
-    if (!window.confirm(`「${flowName}」を削除しますか？`)) return;
+  const handleDelete = (flowId, name) => {
+    if (!window.confirm(`「${name}」を削除しますか？`)) return;
     dispatch(deleteFlow(flowId));
     if (activeFlow?.id === flowId) {
       setFlowName('');
@@ -89,8 +94,63 @@ function FlowLibraryPanel() {
     setFlowName('');
   };
 
+  const handleExport = () => {
+    const payload = buildFlowExportPayload({
+      name: flowName.trim() || activeFlow?.name || 'エクスポート',
+      nodes,
+      edges,
+      viewport,
+    });
+    downloadFlowFile(payload);
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFile = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const imported = parseFlowFile(text);
+
+      const shouldConfirm =
+        nodes.length > 1 ||
+        edges.length > 0 ||
+        Boolean(activeFlow) ||
+        flowName.trim().length > 0;
+
+      if (shouldConfirm && !window.confirm('現在のフローを置き換えて読み込みます。よろしいですか？')) {
+        return;
+      }
+
+      dispatch(clearActiveFlow());
+      dispatch(
+        loadFlowData({
+          nodes: imported.nodes,
+          edges: imported.edges,
+          viewport: imported.viewport,
+        }),
+      );
+      setFlowName(imported.name);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : '読み込みに失敗しました');
+    }
+  };
+
   return (
     <Box>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/json,.json"
+        hidden
+        onChange={handleImportFile}
+      />
+
       <Box sx={{ p: 2, pb: 1 }}>
         <Typography variant="subtitle1" fontWeight="bold">
           フロー保存
@@ -128,6 +188,27 @@ function FlowLibraryPanel() {
         <Button fullWidth size="small" onClick={handleNewFlow} sx={{ mt: 0.5 }}>
           新規フロー
         </Button>
+
+        <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+          <Button
+            fullWidth
+            variant="outlined"
+            size="small"
+            startIcon={<FileDownloadIcon />}
+            onClick={handleExport}
+          >
+            出力
+          </Button>
+          <Button
+            fullWidth
+            variant="outlined"
+            size="small"
+            startIcon={<FileUploadIcon />}
+            onClick={handleImportClick}
+          >
+            読み込み
+          </Button>
+        </Stack>
       </Box>
 
       {savedFlows.length > 0 && (

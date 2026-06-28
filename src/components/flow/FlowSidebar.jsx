@@ -15,23 +15,25 @@ import CloseIcon from '@mui/icons-material/Close';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CircleIcon from '@mui/icons-material/Circle';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
-import BoltIcon from '@mui/icons-material/Bolt';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
-import { useDispatch } from 'react-redux';
-import { addNode, resetFlow } from '../../store/flowSlice';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import { useDispatch, useSelector } from 'react-redux';
+import { useReactFlow } from '@xyflow/react';
+import { addNode, resetFlow, layoutFlow } from '../../store/flowSlice';
 import { clearActiveFlow } from '../../store/flowsSlice';
 import { generateNodeId, NODE_TEMPLATES } from '../../constants/nodeDefaults';
 import FlowLibraryPanel from './FlowLibraryPanel';
 
 const SIDEBAR_ITEMS = [
   { type: 'start', label: '開始', icon: <PlayArrowIcon color="success" /> },
-  { type: 'state', label: '状態', icon: <CircleIcon color="primary" /> },
+  { type: 'state', label: 'モード', icon: <CircleIcon color="primary" /> },
   { type: 'jackpot', label: '大当たり', icon: <EmojiEventsIcon color="warning" /> },
-  { type: 'event', label: 'イベント', icon: <BoltIcon color="secondary" /> },
 ];
 
 function FlowSidebar({ embedded = false, onClose }) {
   const dispatch = useDispatch();
+  const { fitView } = useReactFlow();
+  const { nodes } = useSelector((state) => state.flow);
 
   const handleAddNode = (type) => {
     const template = NODE_TEMPLATES[type];
@@ -45,6 +47,14 @@ function FlowSidebar({ embedded = false, onClose }) {
         data: { ...resolved.data },
       }),
     );
+  };
+
+  const handleLayout = () => {
+    if (nodes.length === 0) return;
+    dispatch(layoutFlow());
+    requestAnimationFrame(() => {
+      fitView({ padding: 0.2, duration: 300 });
+    });
   };
 
   const handleReset = () => {
@@ -104,7 +114,17 @@ function FlowSidebar({ embedded = false, onClose }) {
       </List>
       <Box sx={{ flexGrow: 1 }} />
       <Divider />
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <Button
+          fullWidth
+          variant="outlined"
+          size="small"
+          startIcon={<AccountTreeIcon />}
+          onClick={handleLayout}
+          disabled={nodes.length === 0}
+        >
+          レイアウト整理
+        </Button>
         <Button
           fullWidth
           variant="outlined"

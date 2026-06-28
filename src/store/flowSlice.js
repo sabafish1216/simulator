@@ -1,6 +1,17 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { applyNodeChanges, applyEdgeChanges, addEdge } from '@xyflow/react';
 import { hasLimitedSpins, isRushFall, hasChargeProbability } from '../constants/nodeDefaults';
+import { layoutFlowNodes } from '../utils/flowLayout';
+
+function stripEventNodes(nodes, edges) {
+  const removedIds = new Set(nodes.filter((node) => node.type === 'event').map((node) => node.id));
+  if (removedIds.size === 0) return { nodes, edges };
+
+  return {
+    nodes: nodes.filter((node) => !removedIds.has(node.id)),
+    edges: edges.filter((edge) => !removedIds.has(edge.source) && !removedIds.has(edge.target)),
+  };
+}
 
 const initialNodes = [
   {
@@ -54,6 +65,20 @@ const flowSlice = createSlice({
     },
     addNode: (state, action) => {
       state.nodes.push(action.payload);
+    },
+    selectNode: (state, action) => {
+      const id = action.payload;
+      state.nodes = state.nodes.map((node) => ({
+        ...node,
+        selected: node.id === id,
+      }));
+    },
+    removeNode: (state, action) => {
+      const id = action.payload;
+      const node = state.nodes.find((n) => n.id === id);
+      if (!node || node.type === 'start') return;
+      state.nodes = state.nodes.filter((n) => n.id !== id);
+      state.edges = state.edges.filter((e) => e.source !== id && e.target !== id);
     },
     updateNodeData: (state, action) => {
       const { id, data } = action.payload;
@@ -114,10 +139,14 @@ const flowSlice = createSlice({
       }
     },
     resetFlow: () => initialState,
+    layoutFlow: (state) => {
+      state.nodes = layoutFlowNodes(state.nodes, state.edges);
+    },
     loadFlowData: (state, action) => {
       const { nodes, edges, viewport } = action.payload;
-      state.nodes = nodes;
-      state.edges = edges;
+      const cleaned = stripEventNodes(nodes, edges);
+      state.nodes = cleaned.nodes;
+      state.edges = cleaned.edges;
       state.viewport = viewport ?? { x: 0, y: 0, zoom: 1 };
     },
   },
@@ -129,10 +158,13 @@ export const {
   onConnect,
   setViewport,
   addNode,
+  selectNode,
+  removeNode,
   updateNodeData,
   setJackpotDistributions,
   setSourceHandleTarget,
   resetFlow,
+  layoutFlow,
   loadFlowData,
 } = flowSlice.actions;
 

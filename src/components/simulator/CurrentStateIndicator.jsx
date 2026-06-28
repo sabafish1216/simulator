@@ -1,7 +1,6 @@
 import { Box, Chip, Paper, Stack, Typography, alpha, useTheme } from '@mui/material';
 import CircleIcon from '@mui/icons-material/Circle';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
-import BoltIcon from '@mui/icons-material/Bolt';
 import ErrorIcon from '@mui/icons-material/Error';
 import StopIcon from '@mui/icons-material/Stop';
 
@@ -15,7 +14,6 @@ const STATE_CHIP_COLOR = {
 const PHASE_CONFIG = {
   state: { icon: CircleIcon, color: 'primary.main' },
   jackpot: { icon: EmojiEventsIcon, color: 'warning.main' },
-  event: { icon: BoltIcon, color: 'secondary.main' },
   error: { icon: ErrorIcon, color: 'error.main' },
   stopped: { icon: StopIcon, color: 'text.secondary' },
   idle: { icon: CircleIcon, color: 'text.disabled' },

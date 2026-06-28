@@ -47,12 +47,38 @@ function BarTooltip({ active, payload }) {
       <Typography variant="body2">
         出玉: <strong>{(point.ballsWon ?? 0).toLocaleString()} 玉</strong>
       </Typography>
-      {point.rushChain != null && (
+      {point.rushChain != null ? (
         <Typography variant="body2" color="warning.main">
           RUSH: <strong>{point.rushChain}連</strong>
         </Typography>
+      ) : (
+        <Typography variant="body2" color="info.main">
+          <strong>単発</strong>
+        </Typography>
       )}
     </Box>
+  );
+}
+
+function RushBarLabel({ x, y, width, index, chartData, rushColor, singleColor }) {
+  const entry = chartData[index];
+  if (!entry || x == null || y == null || width == null) return null;
+
+  const isSingle = entry.rushChain == null;
+  const text = isSingle ? '単発' : `${entry.rushChain}連`;
+  const fill = isSingle ? singleColor : rushColor;
+
+  return (
+    <text
+      x={x + width / 2}
+      y={y - 4}
+      fill={fill}
+      textAnchor="middle"
+      fontSize={10}
+      fontWeight={600}
+    >
+      {text}
+    </text>
   );
 }
 
@@ -60,15 +86,10 @@ function NormalJackpotBarChart({ bars, totalNormalJackpots }) {
   const theme = useTheme();
   const chartGrid = alpha(theme.palette.text.primary, 0.08);
   const chartAxis = alpha(theme.palette.text.secondary, 0.9);
+  const rushColor = theme.palette.warning.main;
+  const singleColor = theme.palette.info.main;
 
-  const chartData = useMemo(
-    () =>
-      bars.map((bar) => ({
-        ...bar,
-        rushLabel: bar.rushChain != null ? `${bar.rushChain}連` : '',
-      })),
-    [bars],
-  );
+  const chartData = useMemo(() => bars.map((bar) => ({ ...bar })), [bars]);
 
   const chartMinWidth = Math.max(chartData.length * BAR_SLOT_WIDTH, 280);
   const trimmed = totalNormalJackpots > bars.length;
@@ -148,11 +169,15 @@ function NormalJackpotBarChart({ bars, totalNormalJackpots }) {
                   isAnimationActive={false}
                 >
                   <LabelList
-                    dataKey="rushLabel"
-                    position="top"
-                    fill={theme.palette.warning.main}
-                    fontSize={10}
-                    fontWeight={600}
+                    dataKey="rushChain"
+                    content={(props) => (
+                      <RushBarLabel
+                        {...props}
+                        chartData={chartData}
+                        rushColor={rushColor}
+                        singleColor={singleColor}
+                      />
+                    )}
                   />
                 </Bar>
               </BarChart>
